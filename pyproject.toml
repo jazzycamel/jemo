@@ -5,7 +5,7 @@ description = ""
 authors = ["Rob Kent <rob@gulon.co.uk>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9,<3.11"
 PyQt6 = "^6.2.1"
 PyYAML = "^6.0"
 
@@ -16,6 +16,7 @@ pre-commit = "^2.16.0"
 pylint = "^2.12.1"
 mypy = "^0.910"
 types-PyYAML = "^6.0.1"
+pyinstaller = "^4.7"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -1,7 +1,7 @@
 import argparse
 
-from . import logger
-from .jemo import main
+from jemo import logger
+from jemo.jemo import main
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

@@ -19,7 +19,7 @@ To run the application, first create a config file based on `config.yaml` and th
 run the following command:
 
 ```shell
-$ poetry run python -m src.jemo.cli -c <path to config file>
+$ poetry run python src/cli.py -c <path to config file>
 ```
 
 To set up Alexa:
@@ -28,6 +28,15 @@ To set up Alexa:
 2. With Jemo running, click "Discover devices"
 3. Ensure that your Jemo devices have been discovered and appear with their names in the web interface
 4. Test by saying "Alexa, turn on [device name]"
+
+## Build an executable
+A single file executable can be created using PyInstaller by running the following command:
+
+```shell
+$ poetry run pyinstaller jemo.spec
+```
+
+This will create an executable in the `dist/` directory.
 
 ## pre-commit
 ### Setup
