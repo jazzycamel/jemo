@@ -30,7 +30,7 @@ class CommandLinePlugin(PluginBase):
         off_cmd: str,
         state_cmd: str = None,
         use_fake_state: bool = False,
-    ):  #
+    ):  # pylint:disable=too-many-arguments
         super().__init__(name=name, port=port)
 
         self._on_cmd = on_cmd
@@ -41,8 +41,11 @@ class CommandLinePlugin(PluginBase):
     @staticmethod
     def run_cmd(cmd: str) -> bool:
         shlexed_cmd = shlex.split(cmd)
-        process = subprocess.run(shlexed_cmd)
-        return process.returncode == 0
+        try:
+            subprocess.run(shlexed_cmd, check=True)
+            return True
+        except subprocess.CalledProcessError:
+            return False
 
     def on(self) -> bool:
         return self.run_cmd(self._on_cmd)

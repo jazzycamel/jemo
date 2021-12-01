@@ -1,7 +1,7 @@
 import urllib.parse
-from typing import Dict, Mapping, Optional, Union
+from typing import Mapping, Optional, Union
 
-from PyQt6.QtCore import QUrl, pyqtSlot
+from PyQt6.QtCore import QUrl
 from PyQt6.QtNetwork import (
     QAuthenticator,
     QNetworkAccessManager,
@@ -17,7 +17,7 @@ CommandData = Union[Mapping, str]
 OptionalCommandData = Optional[CommandData]
 
 
-class HTTPPlugin(PluginBase):
+class HTTPPlugin(PluginBase):  # pylint:disable=too-many-instance-attributes
     def __init__(
         self,
         *,
@@ -45,13 +45,13 @@ class HTTPPlugin(PluginBase):
         self._headers = headers
 
         self._on_cmd = on_cmd
-        self._on_data = self._to_bytes(on_data)
+        self._on_data = self._to_bytes(on_data) if on_data else None
 
         self._off_cmd = off_cmd
-        self._off_data = self._to_bytes(off_data)
+        self._off_data = self._to_bytes(off_data) if off_data else None
 
         self._state_cmd = state_cmd
-        self._state_data = self._to_bytes(state_data)
+        self._state_data = self._to_bytes(state_data) if state_data else None
         self._state_response_on = state_response_on
         self._state_response_off = state_response_off
 
@@ -60,11 +60,9 @@ class HTTPPlugin(PluginBase):
         self._user = user
         self._password = password
 
-        self._request_queue: Dict[QNetworkReply]
-
         self._nam = QNetworkAccessManager(
             authenticationRequired=self.authentication_required
-        )
+        )  # type:ignore
 
     @staticmethod
     def _to_bytes(data: CommandData) -> bytes:
@@ -74,11 +72,11 @@ class HTTPPlugin(PluginBase):
             return data.encode("utf8")
         return data
 
-    def set_state(self, cmd: str, data: bytes) -> bool:
+    def set_state(self, cmd: str, data: Optional[bytes]) -> bool:
         request = QNetworkRequest(QUrl(cmd))
         reply: QNetworkReply
         if self._method == "POST":
-            reply = self._nam.post(request, data)
+            reply = self._nam.post(request, data)  # type: ignore
         elif self._method == "GET":
             reply = self._nam.get(request)
         else:
@@ -102,7 +100,7 @@ class HTTPPlugin(PluginBase):
         if self._use_fake_state:
             return super().get_state()
 
-        if not self._state_method:
+        if not (self._state_method and self._state_cmd):
             return "unknown"
 
         logger.debug(
@@ -111,7 +109,7 @@ class HTTPPlugin(PluginBase):
         request = QNetworkRequest(QUrl(self._state_cmd))
         reply: QNetworkReply
         if self._state_method == "POST":
-            reply = self._nam.post(request, self._state_data)
+            reply = self._nam.post(request, self._state_data)  # type:ignore
         elif self._state_method == "GET":
             reply = self._nam.get(request)
         else:
@@ -127,13 +125,15 @@ class HTTPPlugin(PluginBase):
             logger.error(f"HTTPPlugin get_state cmd failed: {reply.errorString()}")
         content = reply.readAll().data().decode("utf8")
         logger.debug(f"HTTPPlugin get state response content: {content}")
-        has_response_off = self._state_response_off in content
-        has_response_on = self._state_response_on in content
+        has_response_off = (
+            self._state_response_off and self._state_response_off in content
+        )
+        has_response_on = self._state_response_on and self._state_response_on in content
         if has_response_off == has_response_on:
             return "unknown"
-        elif has_response_off:
+        if has_response_off:
             return "off"
-        elif has_response_on:
+        if has_response_on:
             return "on"
         return "unknown"
 
@@ -143,10 +143,7 @@ class HTTPPlugin(PluginBase):
     def off(self) -> bool:
         return self.set_state(self._off_cmd, self._off_data)
 
-    # @pyqtSlot(QNetworkReply, QAuthenticator)
-    def authentication_required(
-        self, reply: QNetworkReply, authenticator: QAuthenticator
-    ):
+    def authentication_required(self, _, authenticator: QAuthenticator):
         if self._user:
             authenticator.setUser(self._user)
         if self._password:

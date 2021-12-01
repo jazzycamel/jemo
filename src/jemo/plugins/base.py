@@ -29,14 +29,13 @@ class PluginBase(ABC):
         return self._name
 
     @abstractmethod
-    def on(self) -> bool:
+    def on(self) -> bool:  # pylint:disable=invalid-name
         pass
 
     @abstractmethod
     def off(self) -> bool:
         pass
 
-    @abstractmethod
     def get_state(self) -> str:
         return self._latest_action
 

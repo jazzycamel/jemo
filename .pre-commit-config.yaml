@@ -1,0 +1,28 @@
+repos:
+  - repo: local
+    hooks:
+      - id: black
+        name: black
+        entry: poetry run black
+        language: python_venv
+        types: [python]
+        stages: [commit, push]
+      - id: isort
+        name: isort
+        entry: poetry run isort --profile=black
+        language: python_venv
+        types: [python]
+        stages: [commit, push]
+      - id: pylint
+        name: pylint
+        entry: poetry run pylint src/jemo --disable=similarities
+        language: python_venv
+        types: [python]
+        stages: [push]
+      - id: mypy
+        name: mypy
+        entry: poetry run mypy --config-file .mypy.ini src/jemo
+        language: python_venv
+        pass_filenames: false
+        types: [python]
+        stages: [push]

@@ -6,7 +6,7 @@ import uuid
 from email.utils import formatdate
 from functools import partial
 from random import random
-from typing import Iterable, List, Optional
+from typing import List, Optional
 
 from PyQt6.QtCore import QObject, QTimer, pyqtSlot
 from PyQt6.QtNetwork import (
@@ -28,7 +28,7 @@ NEW_LINE = "\r\n"
 
 class JemoDevice(QObject):
     def __init__(self, name: str, plugin: PluginBase, **kwargs) -> None:
-        super().__init__(parent=None, **kwargs)
+        super().__init__(parent=None, **kwargs)  # type:ignore
         self._name = name
         self._serial = make_serial(name)
         self._plugin = plugin
@@ -37,7 +37,9 @@ class JemoDevice(QObject):
 
     def start_server(self, ip_address: str, port: int):
         logger.debug(f"Starting TCP server on {ip_address}:{port}")
-        self._server = QTcpServer(self, newConnection=self.new_connection)
+        self._server = QTcpServer(
+            self, newConnection=self.new_connection
+        )  # type:ignore
         self._server.listen(QHostAddress(ip_address), port)
         if not self._server.isListening():
             raise Exception(
@@ -178,9 +180,7 @@ class JemoDevice(QObject):
         ) + 2 * NEW_LINE
 
         eventservice_response = self.add_http_headers(eventservice_xml)
-        logger.debug(
-            f"Jemo response to eventservice request:\n{eventservice_response}"
-        )
+        logger.debug(f"Jemo response to eventservice request:\n{eventservice_response}")
         socket.write(eventservice_response.encode("utf8"))
         socket.waitForBytesWritten()
         socket.close()
@@ -322,7 +322,7 @@ class SSDPServer(QObject):
         self._socket.joinMulticastGroup(QHostAddress("239.255.255.0"))
 
     @pyqtSlot("qint64")
-    def bytes_written(self, num_bytes):
+    def bytes_written(self, num_bytes):  # pylint:disable=no-self-use
         logger.debug(f"UDP bytes written: {num_bytes}")
 
     @pyqtSlot()
@@ -341,7 +341,7 @@ class SSDPServer(QObject):
                 (pattern for pattern in self.DISCOVER_PATTERNS if pattern in data), None
             )
             if discover_pattern and 'man: "ssdp:discover"' in data.lower():
-                mx = 0.0
+                mx_value = 0.0
                 mx_line = next(
                     (
                         line
@@ -353,9 +353,9 @@ class SSDPServer(QObject):
                 if mx_line:
                     mx_str = mx_line.split()[-1]
                     if mx_str.replace(".", "", 1).isnumeric():
-                        mx = float(mx_str)
+                        mx_value = float(mx_str)
                 self.respond_to_search(
-                    sender_address, sender_port, discover_pattern, mx
+                    sender_address, sender_port, discover_pattern, mx_value
                 )
 
     def respond_to_search(
@@ -363,13 +363,13 @@ class SSDPServer(QObject):
         sender_address: QHostAddress,
         sender_port: int,
         discover_pattern: str,
-        mx: float = 0.0,
+        mx_value: float = 0.0,
     ):
         date_str = formatdate(timeval=None, localtime=False, usegmt=True)
         for device in self._devices:
-            name = device.get("name")
-            ip_address = device.get("ip_address")
-            port = device.get("port")
+            name = device["name"]
+            ip_address = device["ip_address"]
+            port = device["port"]
 
             location = f"http://{ip_address}:{port}/setup.xml"
             logger.debug(f"Location: {location}")
@@ -396,15 +396,17 @@ class SSDPServer(QObject):
 
             logger.debug(
                 f"Sending response to {sender_address.toString()}:{sender_port} "
-                f"with mx {mx}:\n{response!r}"
+                f"with mx {mx_value}:\n{response!r}"
             )
             datagram = QNetworkDatagram(
                 response.encode("utf8"), sender_address, sender_port
-            )
-            QTimer.singleShot(
-                int(random() * max(0, min(5, int(mx)))) * 1000,
-                partial(self._socket.writeDatagram, datagram),
-            )
+            )  # type:ignore
+
+            if self._socket:
+                QTimer.singleShot(
+                    int(random() * max(0, min(5, int(mx_value)))) * 1000,
+                    partial(self._socket.writeDatagram, datagram),  # type:ignore
+                )
 
 
 def main(config_file_path: str):
@@ -413,8 +415,8 @@ def main(config_file_path: str):
 
     try:
         config = load_config_file(config_file_path)
-    except Exception as e:
-        raise Exception(f"Unable to load config from '{config_file_path}'!") from e
+    except Exception as exc:
+        raise Exception(f"Unable to load config from '{config_file_path}'!") from exc
 
     logger.debug(f"Config: {config}")
     if "jemo" not in config:
@@ -435,8 +437,8 @@ def main(config_file_path: str):
 
     try:
         plugins = jemo_config["plugins"]
-    except KeyError:
-        raise Exception("No 'plugins' found in 'jemo' config")
+    except KeyError as exc:
+        raise Exception("No 'plugins' found in 'jemo' config") from exc
 
     ssdp_server = SSDPServer()
     jemo_devices: List[JemoDevice] = []
@@ -444,7 +446,7 @@ def main(config_file_path: str):
     for plugin, plugin_config in plugins.items():
         logger.debug(f"Loading plugin: {plugin}")
 
-        PluginClass = getattr(plugin_module, plugin)
+        PluginClass = getattr(plugin_module, plugin)  # pylint:disable=invalid-name
         if not issubclass(PluginClass, PluginBase):
             raise TypeError(f"Plugins must inherit from {repr(PluginBase)}")
 
@@ -455,8 +457,8 @@ def main(config_file_path: str):
 
         try:
             devices = plugin_config["devices"]
-        except KeyError:
-            raise Exception(f"No 'devices' configured for {plugin}!")
+        except KeyError as exc:
+            raise Exception(f"No 'devices' configured for {plugin}!") from exc
 
         for device in devices:
             logger.debug(f"{plugin} device config: {repr(device)}")
@@ -469,4 +471,4 @@ def main(config_file_path: str):
 
     ssdp_server.start_server()
 
-    exit(application.exec())
+    sys.exit(application.exec())

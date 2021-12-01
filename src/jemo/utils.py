@@ -16,7 +16,7 @@ def get_local_ip(ip_address: Optional[str] = None) -> str:
         host_address = host_info.addresses()[0].toString()
 
         if host_address in ("127.0.1.1", "127.0.0.1", "localhost", "unknown"):
-            logger.debug(f"(Damn you linux!)")
+            logger.debug("(Damn you linux!)")
 
             udp_socket = QUdpSocket()
             udp_socket.connectToHost("8.8.8.8", 80)
@@ -26,6 +26,7 @@ def get_local_ip(ip_address: Optional[str] = None) -> str:
 
         logger.debug(f"Using IP address: {host_address}")
         return host_address
+    return ip_address
 
 
 def make_serial(name: str) -> str:
