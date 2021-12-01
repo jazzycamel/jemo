@@ -1,0 +1,17 @@
+jemo:
+  ip_address: auto
+  plugins:
+    HTTPPlugin:
+      devices:
+        - name: HTTPPlugin
+          port: 8124
+          method: POST
+          on_cmd: http://192.168.1.113:8765/on/
+          off_cmd: http://192.168.1.113:8765/off/
+          state_cmd: http://192.168.1.113:8765/status/
+          state_response_on: '{"status":"on"}'
+          state_response_off: '{"status":"off"}'
+    DummyPlugin:
+      devices:
+        - name: DummyPlugin
+          port: 8123

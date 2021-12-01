@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "jemo"
+version = "0.1.0"
+description = ""
+authors = ["Rob Kent <rob@gulon.co.uk>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+PyQt6 = "^6.2.1"
+PyYAML = "^6.0"
+
+[tool.poetry.dev-dependencies]
+black = "^21.11b1"
+isort = "^5.10.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
